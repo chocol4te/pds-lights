@@ -6,6 +6,7 @@
  * power
  * brightness
  * mode
+ * terminator (0A or 00001010)
  */
 
 #include <Arduino.h>
@@ -60,6 +61,10 @@ void updatedata() {
     Serial.print(data);
     Serial.println();
   }
+}
+
+void senddata() { // Sends processed data to 328P for light update
+
 }
 
 void updatefirmware() {
