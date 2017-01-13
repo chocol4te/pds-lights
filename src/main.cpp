@@ -2,11 +2,10 @@
  * Written by Ferdia McKeogh, 2017
  *
  * data.bin format as follows:
- * latestversion
+ * version
  * power
  * brightness
  * mode
- * terminator (0A or 00001010)
  */
 
 #include <Arduino.h>
@@ -14,6 +13,7 @@
 #include <WiFiClientSecure.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
+#include <SoftwareSerial.h>
 
 #define FINGERPRINT "***REMOVED***"
 #define CURRENT_VERSION 0
@@ -28,40 +28,9 @@ const int httpsPort = 443;
 const char* url = "/esp8266/data.bin";
 
 uint8_t version;
-bool power;
+uint8_t power;
 uint8_t brightness;
 uint8_t mode;
-
-void updatedata() {
-
-  if (!client.connect(host, httpsPort)) {
-    Serial.println("Connection to ***REMOVED*** failed");
-    return;
-  }
-
-  if (client.verify(FINGERPRINT, host)) {
-  } else {
-    Serial.println("Certificate doesn't match");
-  }
-
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-               "Host: " + host + "\r\n" +
-               "User-Agent: pds_lights_esp8266\r\n" +
-               "Connection: close\r\n\r\n");
-
-  while (client.connected()) {
-    String line = client.readStringUntil('\n');
-    if (line == "\r") {
-      break;
-    }
-  }
-
-  while (client.available()) {
-    uint8_t data = client.read();
-    Serial.print(data);
-    Serial.println();
-  }
-}
 
 void senddata() { // Sends processed data to 328P for light update
 
@@ -88,8 +57,42 @@ void updatefirmware() {
   }
 }
 
+void updatedata() {
+
+  if (!client.connect(host, httpsPort)) {
+    Serial.println("Connection to ***REMOVED*** failed");
+    return;
+  }
+
+  if (client.verify(FINGERPRINT, host)) {
+  } else {
+    Serial.println("Certificate doesn't match");
+  }
+
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+               "Host: " + host + "\r\n" +
+               "User-Agent: pds_lights_esp8266\r\n" +
+               "Connection: close\r\n\r\n");
+
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      break;
+    }
+  }
+
+  version = client.read();
+  power = client.read();
+  brightness = client.read();
+  mode = client.read();
+
+  if (version != CURRENT_VERSION) {
+    updatefirmware();
+  }
+}
+
 void setup() {
-  Serial.begin(921600);
+  Serial.begin(19200);
 
   Serial.print("Booting version ");
   Serial.println(CURRENT_VERSION);
@@ -109,5 +112,9 @@ void setup() {
 
 void loop() {
   updatedata();
+  Serial.println(version);
+  Serial.println(power);
+  Serial.println(brightness);
+  Serial.println(mode);
   delay(1000);
 }
