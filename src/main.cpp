@@ -16,7 +16,7 @@
 #include <SoftwareSerial.h>
 
 #define FINGERPRINT "***REMOVED***"
-#define CURRENT_VERSION 0
+#define CURRENT_VERSION 3
 
 WiFiClientSecure client;
 
@@ -40,7 +40,7 @@ void updatefirmware() {
 
   Serial.print("Beginning update...");
 
-  t_httpUpdate_return  ret = ESPhttpUpdate.update("https://***REMOVED***/esp8266/firmware.bin", "", FINGERPRINT, true);
+  t_httpUpdate_return  ret = ESPhttpUpdate.update("http://***REMOVED***/esp8266/firmware.bin");
 
   switch(ret) {
     case HTTP_UPDATE_FAILED:
@@ -81,14 +81,29 @@ void updatedata() {
     }
   }
 
-  version = client.read();
-  power = client.read();
-  brightness = client.read();
-  mode = client.read();
+  while (client.connected()) {
+    version = client.read();
+    power = client.read();
+    brightness = client.read();
+    mode = client.read();
+  }
 
   if (version != CURRENT_VERSION) {
     updatefirmware();
   }
+}
+
+void printvalues() {
+  Serial.print("Version: ");
+  Serial.println(version);
+  Serial.print("Power: ");
+  Serial.println(power);
+  Serial.print("Brightness: ");
+  Serial.println(brightness);
+  Serial.print("Mode: ");
+  Serial.println(mode);
+  Serial.println();
+  Serial.println();
 }
 
 void setup() {
@@ -107,14 +122,10 @@ void setup() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
-
 }
 
 void loop() {
   updatedata();
-  Serial.println(version);
-  Serial.println(power);
-  Serial.println(brightness);
-  Serial.println(mode);
+  printvalues();
   delay(1000);
 }
